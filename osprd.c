@@ -180,7 +180,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 	int filp_writable = (filp->f_mode & FMODE_WRITE) != 0;
 
 	// This line avoids compiler warnings; you may remove it.
-	(void) filp_writable, (void) d;
+	// (void) filp_writable, (void) d;
 
 	// Set 'r' to the ioctl's return value: 0 on success, negative on error
 
@@ -222,6 +222,10 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// be protected by a spinlock; which ones?)
 
 		// Your code here (instead of the next two lines).
+		wait_event_interruptible(d->blockq, (d->writelocks == 0) &&
+			(filp_writable == 0 || d->readlocks == 0));
+		wake_up_all(d);
+
 		eprintk("Attempting to acquire\n");
 		r = -ENOTTY;
 
